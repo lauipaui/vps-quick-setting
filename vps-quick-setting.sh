@@ -62,9 +62,9 @@ valid_allow(){ [[ $1 =~ ^([0-9]{1,5})/(tcp|udp)$ ]] && valid_port "${BASH_REMATC
 has_key(){ find /root/.ssh /home -maxdepth 3 -type f -name authorized_keys -size +0c 2>/dev/null | grep -q .; }
 ask(){ local a; $AUTO && [[ ${2:-N} == Y ]] && return 0; $AUTO && return 1; read -r -p "$1 [${2:-N}] " a </dev/tty || a=${2:-N}; [[ ${a:-${2:-N}} =~ ^[Yy]$ ]]; }
 
-configure_timezone(){ [[ -e /usr/share/zoneinfo/$TIMEZONE ]] || { warn "时区不存在：$TIMEZONE"; return; }; ln -snf "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime; echo "$TIMEZONE" >/etc/timezone 2>/dev/null || true; ok "时区：$TIMEZONE"; }
+configure_timezone(){ [[ -e /usr/share/zoneinfo/$TIMEZONE ]] || { warn "时区不存在：$TIMEZONE"; return 0; }; ln -snf "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime; echo "$TIMEZONE" >/etc/timezone 2>/dev/null || true; ok "时区：$TIMEZONE"; }
 configure_hostname(){
- [[ -n $NEW_HOSTNAME ]] || return; [[ $NEW_HOSTNAME =~ ^[A-Za-z0-9][A-Za-z0-9.-]{0,252}$ ]] || die "主机名无效"
+ [[ -n $NEW_HOSTNAME ]] || return 0; [[ $NEW_HOSTNAME =~ ^[A-Za-z0-9][A-Za-z0-9.-]{0,252}$ ]] || die "主机名无效"
  echo "$NEW_HOSTNAME" >/etc/hostname; hostname "$NEW_HOSTNAME" 2>/dev/null || true
  if grep -q '^127\.0\.1\.1[[:space:]]' /etc/hosts; then sed -i "s/^127\.0\.1\.1.*/127.0.1.1 $NEW_HOSTNAME/" /etc/hosts; else echo "127.0.1.1 $NEW_HOSTNAME" >>/etc/hosts; fi
  ok "主机名：$NEW_HOSTNAME"
@@ -82,12 +82,12 @@ configure_ssh(){
  SSH_PORT=$target; has_key && ok "SSH 密钥加固完成（端口 $SSH_PORT）" || warn "未发现 authorized_keys，已保留密码登录防止锁死"
 }
 collect_listeners(){
- $PRESERVE_LISTENERS || return
+ $PRESERVE_LISTENERS || return 0
  while read -r proto port; do valid_allow "$port/$proto" && ALLOW_SPECS+=("$port/$proto"); done < <(ss -H -lntu 2>/dev/null | awk '$1=="tcp"||$1=="udp"{a=$5;sub(/^.*:/,"",a);gsub(/[[\]]/,"",a);if(a~/^[0-9]+$/)print $1,a}' | sort -u)
 }
 dedupe_rules(){ local i; declare -A seen=(); local out=(); for i in "${ALLOW_SPECS[@]}"; do valid_allow "$i" || die "端口规则无效：$i"; [[ ${seen[$i]+x} ]] || { seen[$i]=1; out+=("$i"); }; done; ALLOW_SPECS=("${out[@]}"); }
 configure_firewall(){
- $ENABLE_FIREWALL || { warn "已跳过防火墙"; return; }
+ $ENABLE_FIREWALL || { warn "已跳过防火墙"; return 0; }
  ALLOW_SPECS+=("$SSH_PORT/tcp" "80/tcp" "443/tcp"); collect_listeners; dedupe_rules
  local rules=/etc/nftables.d/90-vps-quick-setting.nft main=/etc/nftables.conf i port proto
  mkdir -p /etc/nftables.d; cp -a "$rules" "$BACKUP_DIR/" 2>/dev/null || true
@@ -105,8 +105,8 @@ configure_firewall(){
 }
 configure_fail2ban(){ mkdir -p /etc/fail2ban/jail.d; printf '[sshd]\nenabled=true\nport=%s\nbackend=auto\nmaxretry=5\nfindtime=10m\nbantime=12h\n' "$SSH_PORT" >/etc/fail2ban/jail.d/sshd.local; svc_enable_start fail2ban; ok "Fail2ban 已启用"; }
 configure_swap(){
- [[ $SWAP_MB =~ ^[0-9]+$ ]] || die "Swap 大小应为整数 MB"; ((SWAP_MB>0)) || return
- swapon --show=NAME --noheadings 2>/dev/null | grep -q . && { warn "已有 Swap，跳过"; return; }; [[ ! -e /swapfile ]] || die "/swapfile 已存在"
+ [[ $SWAP_MB =~ ^[0-9]+$ ]] || die "Swap 大小应为整数 MB"; ((SWAP_MB>0)) || return 0
+ swapon --show=NAME --noheadings 2>/dev/null | grep -q . && { warn "已有 Swap，跳过"; return 0; }; [[ ! -e /swapfile ]] || die "/swapfile 已存在"
  fallocate -l "${SWAP_MB}M" /swapfile 2>/dev/null || dd if=/dev/zero of=/swapfile bs=1M count="$SWAP_MB" status=progress
  chmod 600 /swapfile; mkswap /swapfile >/dev/null; swapon /swapfile; grep -qF '/swapfile none swap sw 0 0' /etc/fstab || echo '/swapfile none swap sw 0 0' >>/etc/fstab; ok "已创建 ${SWAP_MB}MB Swap"
 }
