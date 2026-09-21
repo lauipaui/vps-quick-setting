@@ -101,9 +101,7 @@ configure_firewall(){
  # contain 'flush ruleset', which would temporarily erase Docker/WARP rules.
  enable_nftables_boot
  ok "双栈防火墙已启用，放行：${ALLOW_SPECS[*]}"
- if command -v docker >/dev/null 2>&1; then
-  warn "Docker 发布端口需在 DOCKER-USER 链另行限制来源"
- fi
+ if command -v docker >/dev/null 2>&1; then warn "Docker 发布端口需在 DOCKER-USER 链另行限制来源"; fi
 }
 configure_fail2ban(){ mkdir -p /etc/fail2ban/jail.d; printf '[sshd]\nenabled=true\nport=%s\nbackend=auto\nmaxretry=5\nfindtime=10m\nbantime=12h\n' "$SSH_PORT" >/etc/fail2ban/jail.d/sshd.local; svc_enable_start fail2ban; ok "Fail2ban 已启用"; }
 configure_swap(){
