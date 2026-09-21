@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 umask 077
 
-VERSION="2.0.1"; AUTO=false; TIMEZONE="Asia/Shanghai"; NEW_HOSTNAME=""
+VERSION="2.0.2"; AUTO=false; TIMEZONE="Asia/Shanghai"; NEW_HOSTNAME=""
 REQUESTED_SSH_PORT=""; SWAP_MB=0; PRESERVE_LISTENERS=true; ENABLE_FIREWALL=true
 ALLOW_SPECS=(); OS=""; OS_FAMILY=""; INIT_SYSTEM=""; SSH_SERVICE=""; SSH_PORT=22; BACKUP_DIR=""
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
@@ -101,7 +101,9 @@ configure_firewall(){
  # contain 'flush ruleset', which would temporarily erase Docker/WARP rules.
  enable_nftables_boot
  ok "双栈防火墙已启用，放行：${ALLOW_SPECS[*]}"
- if command -v docker >/dev/null 2>&1; then\n  warn "Docker 发布端口需在 DOCKER-USER 链另行限制来源"\n fi
+ if command -v docker >/dev/null 2>&1; then
+  warn "Docker 发布端口需在 DOCKER-USER 链另行限制来源"
+ fi
 }
 configure_fail2ban(){ mkdir -p /etc/fail2ban/jail.d; printf '[sshd]\nenabled=true\nport=%s\nbackend=auto\nmaxretry=5\nfindtime=10m\nbantime=12h\n' "$SSH_PORT" >/etc/fail2ban/jail.d/sshd.local; svc_enable_start fail2ban; ok "Fail2ban 已启用"; }
 configure_swap(){
