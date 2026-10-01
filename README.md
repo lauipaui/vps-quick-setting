@@ -79,7 +79,7 @@ sudo bash vps-quick-setting.sh --auto --no-firewall
 - 基线报告：`/root/baseline/<timestamp>-system-baseline.txt`，可能含真实 IP、端口和账户路径，分享前脱敏。
 - 保持旧 SSH 会话，另开终端确认公钥认证、新端口、业务连通、IPv4/IPv6 和时间同步，再关闭旧会话。
 - 只有 SSH 语法失败路径会尝试局部恢复相关文件；没有通用 `--uninstall`、dry-run 或全系统自动回滚。
-- 回归时通过仍可用会话/控制台，恢复自己记录的对应配置，先 `sshd -t` / `nft -c -f` 校验，再按实际服务加载。只删除自己的表不能撤销其他配置和安装包；不盲目 `flush ruleset`。
+- 回归时通过仍可用会话/控制台，恢复自己记录的对应配置，先用 `sshd -t` 和 `nft -c -f /etc/nftables.conf`（或你要恢复的规则文件路径）校验，再按实际服务加载。只删除自己的表不能撤销其他配置和安装包；不盲目 `flush ruleset`。
 - Swap 回滚需确认容量、占用和 fstab，再决定 swapoff/删除，不提供可对所有生产机直接执行的删除命令。
 
 ## 致谢与许可

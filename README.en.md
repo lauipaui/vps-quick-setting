@@ -77,7 +77,7 @@ It can create `/etc/nftables.conf` containing `flush ruleset` and enable boot lo
 - Baseline reports: `/root/baseline/<timestamp>-system-baseline.txt`. Redact addresses, ports and account paths before sharing.
 - Keep old SSH open and independently check fresh key login, target port, business traffic, IPv4/IPv6 and time sync before closing it.
 - SSH syntax failure attempts a local file rollback only. There is no general uninstall, dry-run or complete transactional rollback mode.
-- Use a surviving session/console to restore your own recorded known-good settings, validate with `sshd -t` / `nft -c -f`, then load appropriate services. Removing this project's table does not undo all changes; do not blindly flush unrelated rules.
+- Use a surviving session/console to restore your own recorded known-good settings, validate with `sshd -t` and `nft -c -f /etc/nftables.conf` (or the path of the ruleset you are restoring), then load appropriate services. Removing this project's table does not undo all changes; do not blindly flush unrelated rules.
 - Swap removal needs a capacity/use/fstab review before swapoff or deletion; no universal production-safe removal command is supplied here.
 
 ## Attribution and licensing
